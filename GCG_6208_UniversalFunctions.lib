@@ -1,0 +1,391 @@
+﻿Program.Sub.Preflight.Start
+V.Global.iARCID.Declare
+Program.Sub.Preflight.End
+
+Program.Sub.Catching.Start
+	V.Local.sError.Declare
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}",V.Caller.ScriptFile,V.Ambient.NewLine,v.Args.sub,V.Args.errorno,V.args.errordesc,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Program.Sub.Catching.End
+
+Program.Sub.SetARCID.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.sFile.Declare
+		V.Local.sName.Declare
+		V.Local.sNameSplit.Declare
+		
+		F.Intrinsic.String.Split(V.Caller.ScriptFile,"\",V.Local.sFile)
+		F.Intrinsic.String.Split(V.Local.sFile(V.Local.sFile.UBound),".",V.Local.sName)
+		F.Intrinsic.String.Split(V.Local.sName,"_",V.Local.sNameSplit)
+		V.Global.iARCID.Set(V.Local.sNameSplit(1).Long)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.SetARCID.End
+
+Program.Sub.SetContextMenus.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.iCnt.Declare
+		V.Local.sControls.Declare
+		
+		V.Local.sControlList.Declare
+		V.Local.sFormName.Declare
+		V.Local.sGridControlName.Declare
+		V.Local.sContextMenuName.Declare
+			
+		F.Intrinsic.String.Split(V.Args.sGridControls,"#$#",V.Local.sControls)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sControls.UBound,1)
+			F.Intrinsic.String.Split(V.Local.sControls(V.Local.iCnt),"*!*",V.Local.sControlList)
+			V.Local.sFormName.Set(V.Local.sControlList(0))
+			V.Local.sGridControlName.Set(V.Local.sControlList(1))
+			V.Local.sContextMenuName.Set(V.Local.sControlList(2))
+			Gui.[V.Local.sFormName]..ContextMenuCreate(V.Local.sContextMenuName)
+			Gui.[V.Local.sFormName].[V.Local.sGridControlName].ContextMenuAttach(V.Local.sContextMenuName)
+			F.Intrinsic.Control.CallSub(SetContextMenuItems,"sFormName",V.Local.sFormName,"sContextMenuName",V.Local.sContextMenuName,"sContextMenuItems",V.Args.sContextMenuItems)
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+			
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.SetContextMenus.End
+
+Program.Sub.SetContextMenuItems.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.iCnt.Declare
+		V.Local.sContextMenuItems.Declare
+		V.Local.sContextMenuItem.Declare
+		V.Local.sContextMenuItemName.Declare
+		V.Local.sContextMenuCaption.Declare
+		V.Local.sContextMenuEventHandler.Declare
+		
+		F.Intrinsic.String.Split(V.Args.sContextMenuItems,"#$#",V.Local.sContextMenuItems)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sContextMenuItems.UBound,1)
+			F.Intrinsic.String.Split(V.Local.sContextMenuItems(V.Local.iCnt),"*!*",V.Local.sContextMenuItem)
+			V.Local.sContextMenuItemName.Set(V.Local.sContextMenuItem(0))
+			V.Local.sContextMenuCaption.Set(V.Local.sContextMenuItem(1))
+			V.Local.sContextMenuEventHandler.Set(V.Local.sContextMenuItem(2))
+			Gui.[V.Args.sFormName]..ContextMenuAddItem(V.Args.sContextMenuName,V.Local.sContextMenuItemName,0,V.Local.sContextMenuCaption)
+			Gui.[V.Args.sFormName]..ContextMenuSetItemEventHandler(V.Args.sContextMenuName,V.Local.sContextMenuItemName,V.Local.sContextMenuEventHandler)
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.SetContextMenuItems.End
+
+Program.Sub.Serialize.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.sControls.Declare
+		V.Local.sSerialize.Declare
+		V.Local.iCnt.Declare
+		
+		V.Local.sControlList.Declare
+		V.Local.sForm.Declare
+		V.Local.sGridControl.Declare
+		V.Local.sGridView.Declare
+		
+		F.Intrinsic.String.Split(V.Global.sGridViews,"#$#",V.Local.sControls)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sControls.UBound,1)
+			F.Intrinsic.String.Split(V.Local.sControls(V.Local.iCnt),"*!*",V.Local.sControlList)
+			V.Local.sForm.Set(V.Local.sControlList(0))
+			V.Local.sGridControl.Set(V.Local.sControlList(1))
+			V.Local.sGridView.Set(V.Local.sControlList(2))
+			Gui.[V.Local.sForm].[V.Local.sGridControl].Serialize(V.Local.sGridView,V.Local.sSerialize)
+			F.Global.Registry.AddValue(V.Caller.User,V.Caller.CompanyCode,V.Local.sGridView,V.Global.iARCID,1000,False,"Serialize",False,0,-999.0,1/1/1980,12:00:00 AM,V.Local.sSerialize)
+			V.Local.sSerialize.Set("")
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+		
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.Serialize.End
+
+Program.Sub.Deserialize.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.sControls.Declare
+		V.Local.sSerialize.Declare
+		V.Local.iCnt.Declare
+		
+		V.Local.sControlList.Declare
+		V.Local.sForm.Declare
+		V.Local.sGridControl.Declare
+		V.Local.sGridView.Declare
+		
+		F.Intrinsic.String.Split(V.Global.sGridViews,"#$#",V.Local.sControls)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sControls.UBound,1)
+			F.Intrinsic.String.Split(V.Local.sControls(V.Local.iCnt),"*!*",V.Local.sControlList)
+			V.Local.sForm.Set(V.Local.sControlList(0))
+			V.Local.sGridControl.Set(V.Local.sControlList(1))
+			V.Local.sGridView.Set(V.Local.sControlList(2))
+			F.Global.Registry.ReadValue(V.Caller.User,V.Caller.CompanyCode,V.Local.sGridView,V.Global.iARCID,1000,6,"",V.Local.sSerialize)
+			F.Intrinsic.Control.If(V.Local.sSerialize.Trim,<>,"")
+				Gui.[V.Local.sForm].[V.Local.sGridControl].Deserialize(V.Local.sSerialize)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+		
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.Deserialize.End
+
+Program.Sub.ExportGrid.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.bExcel.Declare
+		V.Local.sExt.Declare
+		V.Local.sControl.Declare
+		V.Local.sFileExport.Declare
+		V.Local.bFileLocked.Declare
+		V.Local.sMsg.Declare
+		V.Local.sGridControlList.Declare
+		V.Local.sCurrentControlList.Declare
+		V.Local.sFormName.Declare
+		V.Local.sGridControlName.Declare
+		V.Local.iCnt.Declare
+		
+		F.Automation.MSExcel.CheckPresence(V.Local.bExcel)
+		F.Intrinsic.Control.If(V.Local.bExcel)
+			V.Local.sExt.Set("xlsx")
+		F.Intrinsic.Control.Else
+			V.Local.sExt.Set("csv")
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.String.Split(V.Args.sGridControls,"#$#",V.Local.sGridControlList)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sGridControlList.UBound,1)
+			F.Intrinsic.String.Split(V.Local.sGridControlList(V.Local.iCnt),"*!*",V.Local.sCurrentControlList)
+			V.Local.sFormName.Set(V.Local.sCurrentControlList(0))
+			V.Local.sGridControlName.Set(V.Local.sCurrentControlList(1))
+			
+			F.Intrinsic.String.Build("{0}\GAB_{1}_{2}_Export.{3}",V.Caller.LocalGssTempDir,V.Global.iARCID,V.Local.sGridControlName,V.Local.sExt,V.Local.sFileExport)
+			F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+			F.Intrinsic.Control.If(V.Local.bFileLocked)
+				F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+				F.Intrinsic.UI.Msgbox(V.Local.sMsg,"File In Use")
+			F.Intrinsic.Control.Else
+				Gui.[V.Local.sFormName].[V.Local.sGridControlName].Export(V.Local.sFileExport,V.Local.sExt)
+				F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+			F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+		
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.ExportGrid.End
+
+Program.Sub.ResetGrid.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+		
+		V.Local.sSerialize.Declare
+		
+		F.Global.Registry.AddValue(V.Caller.User,V.Caller.CompanyCode,V.Args.sGridViewName,V.Global.iARCID,1000,False,"Serialize",False,0,-999.0,1/1/1980,12:00:00 AM,"")
+		
+		V.Global.bLoadData.Set(False)
+		F.Intrinsic.Control.CallSub(cmdRefresh_Click)
+		
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.ResetGrid.End
+
+Program.Sub.LoadData.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+		
+		F.Intrinsic.Control.If(V.DataTable.[V.Args.sDataTableName].Exists)
+			F.Data.DataTable.Close(V.Args.sDataTableName)
+		F.Intrinsic.Control.EndIf
+		
+		V.Global.bLoadData.Set(True)
+		
+		F.Intrinsic.Control.BlockEvents
+		
+		Gui.[V.Args.sFormName].[V.Args.sGridControlName].InvokeWait("Loading...","Please Wait",False)
+		F.Data.DataTable.CreateFromSQL(V.Args.sDataTableName,"con",V.Args.sSQL,True)
+		F.Intrinsic.Control.CallSub(LoadGV,"DT",V.Args.sDataTableName,"GV",V.Args.sGridViewName,"GSGC",V.Args.sGridControlName,"FRM",V.Args.sFormName)
+		Gui.[V.Args.sFormName].[V.Args.sGridControlName].HideWait
+		
+		F.Intrinsic.Control.UnBlockEvents
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.LoadData.End
+
+Program.Sub.LoadGV.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+		V.Local.iRet.Declare
+		V.Local.iCnt.Declare
+		V.Local.sFieldNames.Declare
+		V.Local.sColumns.Declare
+		V.Local.sColumnName.Declare
+		V.Local.bHold.Declare
+		v.Local.sRet.Declare(String)
+		
+		Gui.[V.Args.FRM].[V.Args.GSGC].AddGridViewFromDataTable(V.Args.GV,V.Args.DT)
+		'Gui.[V.Args.FRM].[V.Args.GSGC].AddGridViewFromDataview(V.Args.GV,V.Args.DT,"dvData2")
+		Gui.[V.Args.FRM].[V.Args.GSGC].SuspendLayout()
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"MultiSelect",False)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"OptionBehaviorEditable",False)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"AllowSort",True)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"AllowFilter",True)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"ReadOnly",True)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"OptionsDetailShowDetailTabs",False)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"OptionsViewShowGroupPanel",True)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"OptionsViewColumnAutoWidth",False)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridViewProperty(V.Args.GV,"OptionsFindAlwaysVisible",True)
+		
+		'Loop through columns names by using the V.DataTable.dtName.FieldNames
+		F.Intrinsic.String.Concat("",V.DataTable.[V.Args.DT].FieldNames,V.Local.sFieldNames)
+		F.Intrinsic.String.Split(V.Local.sFieldNames,"*!*",V.Local.sColumns)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sColumns.UBound,1)
+			
+			'Gonna do some automagic here...
+			F.Intrinsic.Control.SelectCase(V.Local.sColumns(V.Local.iCnt).Left01)
+				
+				'Button/Command column...
+				F.Intrinsic.Control.Case("^")
+					'Command column (functional button/checkbox/something)
+					'for me, in this project, a prefix of ^ is a button
+					'These are injected from the SQL Query (just literal columns)
+					'Name of column starts with ^ in this case, value returned is just the caption of the button
+					'SELECT 'Edit' AS '^Edit', 'Delete' AS '^Delete' From Table
+					'Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"VisibleIndex",V.Local.iCnt)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"HeaderHAlignment","Center")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"HeaderFontBold",True)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"CellHAlignment","Center")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"CellBackColor","DarkGray")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"MinWidth","45")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"MaxWidth","45")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"ShowCaption",False)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"Fixed","Left")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"AllowSort",False)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"AllowFilter",False)
+				
+				'Inventory Part w/ Link To S&D
+				F.Intrinsic.Control.Case("#")
+					
+					
+				'SO Link To SO
+				F.Intrinsic.Control.Case("~")
+					
+					
+				'PO Link To PO
+				F.Intrinsic.Control.Case("+")
+				
+				
+				'PO Link To PO Receipts
+				F.Intrinsic.Control.Case("-")
+					
+				
+				'WO Link To WO View
+				F.Intrinsic.Control.Case("!")
+					
+					
+				'Inventory Part Doc Control Link 
+				F.Intrinsic.Control.Case("@")
+					F.Intrinsic.Control.CallSub(GetDCSIcon,"")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"Icon","DCS-OFF")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"HeaderHAlignment","Center")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"CellHAlignment","Center")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"ShowCaption",False)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"MinWidth","25")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"MaxWidth","25")
+					'Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"VisibleIndex",V.Local.iCnt)
+				
+				'Regular old read-only text column.
+				F.Intrinsic.Control.CaseElse
+					'Caption Formatting...
+					F.Intrinsic.String.Replace(V.Local.sColumns(V.Local.iCnt),"_"," ",V.Local.sColumnName)
+					V.Local.sColumnName.Set(V.Local.sColumnName.PCase)
+					
+					'Other Properties
+					'Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"VisibleIndex",V.Local.iCnt)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"HeaderHAlignment","Left")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"CellHAlignment","Left")
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"Caption",V.Local.sColumnName)
+					Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"HeaderFontBold",True)
+					
+					f.Intrinsic.Control.If(V.Local.sColumns(V.Local.iCnt),=,"ONL")
+						Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"Visible",False)
+					f.Intrinsic.Control.ElseIf(V.Local.sColumns(V.Local.iCnt),=,"AMOUNT")
+						Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"DisplayCustomNumeric","$##,###,###.00")
+					f.Intrinsic.Control.ElseIf(V.Local.sColumns(V.Local.iCnt),=,"PRICE")
+						Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"DisplayCustomNumeric","$##,###,###.00")
+					f.Intrinsic.Control.ElseIf(V.Local.sColumns(V.Local.iCnt),=,"Net_Change")
+						Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"DisplayCustomNumeric","$##,###,###.00")
+					f.Intrinsic.Control.ElseIf(V.Local.sColumns(V.Local.iCnt),=,"Qty_Ordered")
+						Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"DisplayCustomNumeric","##,###,##0")
+					f.Intrinsic.Control.EndIf
+					
+					'Display Part, Customer Name, Customer Cntry Code
+					f.Intrinsic.Control.SelectCase(V.Local.sColumns(V.Local.iCnt))
+						f.Intrinsic.Control.caseany("Display_Part","CUSTOMER_NAME","CUSTOMER_CNTRY_CODE")
+							Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"Width",150)
+						F.Intrinsic.Control.CaseElse
+							Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,V.Local.sColumns(V.Local.iCnt),"Width",75)
+					f.Intrinsic.Control.EndSelect
+			F.Intrinsic.Control.EndSelect
+			
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+		
+		'Project specific formatting
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"ONL","Visible",False)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"DATE_ORDER","DisplayCustomDatetime","d")
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"Create_Date","DisplayCustomDatetime","d")
+		Gui.[V.Args.FRM].[V.Args.GSGC].addsummaryitem(v.Args.gv,"Net_Change","Tag1","Sum","","","n")
+'		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"Order_No","GroupIndex",0)
+'		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"Order_Line","GroupIndex",1)
+'		Gui.[V.Args.FRM].[V.Args.GSGC].SetGridviewProperty(V.Args.GV, "ExpandAllGroups", True)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"Part","Visible",False)
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"Start_Year","Caption","GL Year")
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"Period","Caption","GL Period")
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"OrderMonth","Caption","Cal Month")
+		Gui.[V.Args.FRM].[V.Args.GSGC].SetColumnProperty(V.Args.GV,"OrderYear","Caption","Cal Year")
+		
+		Gui.[V.Args.FRM].[V.Args.GSGC].ResumeLayout()
+		Gui.[V.Args.FRM].[V.Args.GSGC].MainView(V.Args.GV)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.LoadGV.End
+
+Program.Sub.GetDCSIcon.Start
+	V.Local.iCnt.Declare
+	'Pass back link and icon...
+	'	sLink
+	'	sDCSLink
+	
+	'Select RTrim(ID) As VENDINV, 'DCS-ON' As DCC From Link_Data Where Type = '00011'
+	
+	F.Data.DataTable.Select("DTAPCHECKS","DocCntrlI = 'DCS-ON'",V.Local.sSelect)
+	F.Intrinsic.Control.If(V.Local.sSelect.IsNotNoReturn)
+		F.Intrinsic.String.Split(V.Local.sSelect,"*!*",V.Local.sSelect)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sSelect.UBound,1)
+			Gui.frmAPCheck.GSGCAPCheck.SetCellAppearance("gvAPCheck",5,V.Local.sSelect(V.Local.iCnt),"Icon","DCS-ON")
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Intrinsic.Control.EndIf
+	
+Program.Sub.GetDCSIcon.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$dduncan$}$20210324134811559$}$r0o+00bj735YsiGsQ60YIo/Zb+26OZQGCE3nmva8uH0YoE3HT2deDzNVIu1EF5x0bfN0EPjzw4w=
+Program.Sub.Comments.End
