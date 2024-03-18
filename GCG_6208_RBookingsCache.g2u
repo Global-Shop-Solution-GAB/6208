@@ -1,0 +1,367 @@
+﻿Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+	V.Global.bLoadData.Declare
+	V.Global.sGridViews.Declare
+	V.Global.sSQL.Declare
+	v.Global.bCmdBrwsCalOpen.Declare
+Program.External.Include.Library("GCG_6208_UniversalFunctions.lib")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Daniel Duncan
+'Customer: TE Connectivity
+'Program Name: Order Bookings Dashboard
+'Date Started: 12/1/2020
+'Description: This dashboard displays all order lines with bookings, changes, deletes, and credit memo records split out.
+
+'Open connection
+
+
+
+f.ODBC.Connection!con.opencompanyconnection(600)
+F.Intrinsic.Control.CallSub(BuildDictionaries)
+F.Intrinsic.Control.CallSub(LoadOrders)
+
+Program.Sub.Main.End
+
+Program.Sub.LoadOrders.Start
+	v.Local.iCnt.Declare
+	v.Local.iCnt2.Declare
+	v.Local.sFilter.Declare
+	v.Local.sFilter2.Declare
+	v.Local.fPrice.Declare
+	v.Local.fAmount.Declare
+	v.Local.sMonth.Declare
+	v.Local.sYear.Declare
+	v.Local.sGLYear.Declare
+	v.Local.sGLPeriod.Declare
+	v.Local.iMonth.Declare
+	v.Local.iYear.Declare
+	v.Local.iGLYear.Declare
+	v.Local.iGLPeriod.Declare
+	v.Local.bIsNumber.Declare
+	v.Local.sDateTime.Declare
+	v.Local.sSign.Declare
+	v.Local.fPreviousAmt.Declare
+	v.Local.lPreviousQty.Declare
+	v.Local.fNetChange.Declare
+	v.Local.lQtyChange.Declare
+	v.Local.sAfterVal.Declare
+	v.Local.sAfterQty.Declare
+	v.Local.sRet.Declare
+	v.Local.fQty.Declare
+	v.Local.sWhere.Declare
+	V.Local.iRet.Declare
+	v.Local.sSQL.Declare
+	v.Local.dStartDate.Declare
+	v.Local.iApproved.Declare
+	v.Local.sError.Declare
+	v.Local.sFile.Declare
+	
+	f.Intrinsic.Control.Try	
+		
+		'Build the filter criteria		
+		f.Intrinsic.Date.DateAdd("M",-1,v.Ambient.Date,v.Local.dStartDate)
+		v.Local.dStartDate.Set("1990-02-01")
+		
+		'Set wait dialog here
+		f.Intrinsic.UI.InvokeWaitDialog("Rebuilding Bookings.  Please Wait.","ARC 6208 Loading")
+
+		V.Local.sSQL.Set("select B.ORDER_NO, B.RECORD_NO AS ORDER_LINE, 'Order' as Rec_Type, b.order_no+b.RECORD_NO as ONL, '' AS REV, convert(A.APPROVAL_DATE,sql_date) AS DATE_ORDER, b.date_order as Create_Date, COALESCE(B.PART,'') AS PART, '' AS DISPLAY_PART, B.LOCATION, B.PRODUCT_LINE, B.UM_ORDER, B.CUSTOMER, '' AS CUSTOMER_NAME, '' AS CUSTOMER_CNTRY_CODE, B.qty_bo as qty_ordered, B.PRICE, B.EXTENSION AS AMOUNT, A.APPROVAL_FLAG AS APPROVED, MONTH(convert(A.APPROVAL_DATE,sql_date)) as OrderMonth, YEAR(convert(A.APPROVAL_DATE,sql_date)) as OrderYear, gl.start_year, gl.period, replace(convert(a.approval_date,sql_char),'-','') as ChgDT, '' as PO FROM V_ORDER_LINES B inner join GCG_6093_SO_LINE_APP a on b.order_no=a.order_no and b.RECORD_NO=a.order_line inner join V_GL_CALENDAR GL ON convert(a.approval_date,sql_date) >= convert(GL.BEG_DATE,sql_date) AND convert(a.approval_date,sql_date) <= convert(GL.END_DATE,sql_date) WHERE B.RECORD_NO <> '0000' and b.qty_bo > 0 union all select B.ORDER_NO, B.order_rec AS ORDER_LINE, 'Order' as Rec_Type, b.order_no+b.order_rec as ONL, '' AS REV, convert(A.APPROVAL_DATE,sql_date) AS DATE_ORDER, b.date_order as Create_Date, COALESCE(B.PART,'') AS PART, '' AS DISPLAY_PART, B.LOCATION, B.PRODUCT_LINE, B.UM_ORDER, B.CUSTOMER, '' AS CUSTOMER_NAME, '' AS CUSTOMER_CNTRY_CODE, B.qty_shipped as qty_ordered, B.PRICE, B.EXTENSION AS AMOUNT, A.APPROVAL_FLAG AS APPROVED, MONTH(convert(A.APPROVAL_DATE,sql_date)) as OrderMonth, YEAR(convert(A.APPROVAL_DATE,sql_date)) as OrderYear,gl.start_year, gl.period, replace(convert(a.approval_date,sql_char),'-','') as ChgDT, '' as PO FROM V_shipment_LINES B inner join GCG_6093_SO_LINE_APP a on b.order_no=a.order_no and b.order_rec=a.order_line inner join V_GL_CALENDAR GL ON convert(a.approval_date,sql_date) >= convert(GL.BEG_DATE,sql_date) AND convert(a.approval_date,sql_date) <= convert(GL.END_DATE,sql_date) WHERE B.order_rec <> '0000' and b.qty_shipped>0 union all select B.ORDER_NO, B.ORDER_LINE, 'Order' as Rec_Type, b.order_no+b.ORDER_LINE as ONL, '' AS REV, convert(A.APPROVAL_DATE,sql_date) AS DATE_ORDER,   b.date_order as Create_Date, COALESCE(B.PART,'') AS PART, '' AS DISPLAY_PART, B.LOCATION, B.PRODUCT_LINE, B.UM AS UM_ORDER, B.CUSTOMER, '' AS CUSTOMER_NAME, '' AS CUSTOMER_CNTRY_CODE, B.qty_shipped as qty_ordered, B.PRICE, B.EXTENSION AS AMOUNT, A.APPROVAL_FLAG AS APPROVED, MONTH(convert(A.APPROVAL_DATE,sql_date)) as OrderMonth, YEAR(convert(A.APPROVAL_DATE,sql_date)) as OrderYear, gl.start_year, gl.period, replace(convert(a.approval_date,sql_char),'-','') as ChgDT, '' as PO FROM V_ORDER_HIST_LINE B inner join GCG_6093_SO_LINE_APP a on b.order_no=a.order_no and b.ORDER_LINE=a.order_line inner join V_GL_CALENDAR GL ON convert(a.approval_date,sql_date) >= convert(GL.BEG_DATE,sql_date) AND convert(a.approval_date,sql_date) <= convert(GL.END_DATE,sql_date) WHERE B.ORDER_LINE <> '0000' and b.qty_shipped>0")
+		
+		f.Data.DataTable.CreateFromSQL("dtData","con",v.Local.sSQL)
+		
+		'Dictionary for filling in customer PO
+		f.Data.Dictionary.CreateFromSQL("dictPO","con","select order_no, customer_po from v_order_header union select order_no, customer_po from v_shipment_header union select order_no, customer_po from v_order_hist_head")
+		f.Data.Dictionary.SetDefaultReturn("dictPO","")
+		f.Data.DataTable.FillFromDictionary("dtData","dictPO","Order_No","PO")
+		f.Data.Dictionary.Close("dictPO")
+		
+		'Create blank dummy table for adding order change and deletion lines to be combined later
+		f.Intrinsic.Control.If(v.DataTable.dtData2.Exists)
+			f.Data.DataTable.DeleteRow("dtData2")
+			f.Intrinsic.Control.If(v.DataTable.dtData3.Exists)
+				f.Data.DataTable.DeleteRow("dtData3")
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.Else
+			f.Intrinsic.Control.CallSub(LoadEmpties)
+		f.Intrinsic.Control.EndIf
+		
+		'Combine bookings, changes, deletes, and credit memos into one table: order log.  Sort by date and time asc.
+		'	Bookings 		>>		ORDER_BOOKING
+		'	Changes 		>>		ORDER_CHANGES
+		'	Deletes 		>>		ORDER_DELETES
+		'	Credit memos 	>>		ORDER_HIST_LINE joined to AR_OPEN_ITEMS where batch code is 12
+
+		
+		'Get the GSS bookings data
+'		f.Data.DataTable.CreateFromSQL("dtBookings","con","select ob.order_no, ob.order_line as record_no, ob.qty, 0 as BeforeVal, ob.total_dollars as AfterVal, SUBSTRING (CHG_DATE ,5 ,2 ) as OrderMonth, SUBSTRING (CHG_DATE ,1 ,4 ) as OrderYear, IF (SUBSTRING (chg_date ,1 ,4 )>= '1900' AND SUBSTRING (chg_date ,1 ,4 )<= '2999' AND SUBSTRING (chg_date ,5 ,2 )<= '12' AND SUBSTRING (chg_date ,5 ,2 )>= '01' AND SUBSTRING (chg_date ,7 ,2 )<= '31' AND SUBSTRING (chg_date ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (chg_date ,1 ,4 )+'-' +SUBSTRING (chg_date ,5 ,2 )+'-' +SUBSTRING (chg_date ,7 ,2 ),SQL_DATE ),CONVERT ('1900-01-01' ,SQL_DATE )) as chg_date, ob.chg_time, ob.part, ob.locn, ob.prod_line, 'Booking' as Rec_Type, concat(ob.chg_date,ob.chg_time) as ChgDT, cust_po as PO from order_booking ob")
+		f.Data.DataTable.CreateFromSQL("dtBookings","con","select ob.order_no, ob.order_line as record_no, 0 as BeforeQty, ob.qty as AfterQTY, ob.qty, 0 as BeforeVal, ob.total_dollars as AfterVal, SUBSTRING (CHG_DATE ,5 ,2 ) as OrderMonth, SUBSTRING (CHG_DATE ,1 ,4 ) as OrderYear, IF (SUBSTRING (chg_date ,1 ,4 )>= '1900' AND SUBSTRING (chg_date ,1 ,4 )<= '2999' AND SUBSTRING (chg_date ,5 ,2 )<= '12' AND SUBSTRING (chg_date ,5 ,2 )>= '01' AND SUBSTRING (chg_date ,7 ,2 )<= '31' AND SUBSTRING (chg_date ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (chg_date ,1 ,4 )+'-' +SUBSTRING (chg_date ,5 ,2 )+'-' +SUBSTRING (chg_date ,7 ,2 ),SQL_DATE ),CONVERT ('1900-01-01' ,SQL_DATE )) as chg_date, ob.chg_time, ob.part, ob.locn, ob.prod_line, 'Booking' as Rec_Type, concat(ob.chg_date,ob.chg_time) as ChgDT, cust_po as PO from order_booking ob")
+
+		f.Data.DataView.Create("dtBookings","dvBookings",22)
+		'Get the order change and delete data.  Merge together with bookings.
+'		f.Data.DataTable.CreateFromSQL("dtChanges","con","select oc.order_no, oc.record_no, oc.order_no+oc.record_no as ONL, ltrim(rtrim(oc.before)) as BeforeVal, ltrim(rtrim(oc.after)) as AfterVal, oc.part, oc.locn, oc.prod_line, if(oc.qty='',0,oc.qty) as qty, 'Change' as Rec_Type, IF (SUBSTRING (CHANGE_DATE ,1 ,4 )>= '1900' AND SUBSTRING (CHANGE_DATE ,1 ,4 )<= '2999' AND SUBSTRING (CHANGE_DATE ,5 ,2 )<= '12' AND SUBSTRING (CHANGE_DATE ,5 ,2 )>= '01' AND SUBSTRING (CHANGE_DATE ,7 ,2 )<= '31' AND SUBSTRING (CHANGE_DATE ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (CHANGE_DATE ,1 ,4 )+'-' +SUBSTRING (CHANGE_DATE ,5 ,2 )+'-' +SUBSTRING (CHANGE_DATE ,7 ,2 ),"SQL_DATE" ),CONVERT ('1900-01-01' ,SQL_DATE )) as Chg_Date, oc.change_time as chg_time,SUBSTRING (CHANGE_DATE ,1 ,4 ) as OrderYear, SUBSTRING (CHANGE_DATE ,5 ,2 ) as OrderMonth, concat(oc.change_date,oc.change_time) as ChgDT from order_changes oc where oc.field_name in ('Extended Amt') and ltrim(rtrim(oc.before))<>ltrim(rtrim(after)) order by oc.change_date, oc.change_time")
+'		f.Data.DataTable.CreateFromSQL("dtChanges","con","select oc.order_no, oc.record_no, oc.order_no+oc.record_no as ONL, ltrim(rtrim(oc.before)) as BeforeVal, ltrim(rtrim(oc.after)) as AfterVal, oc.part, oc.locn, oc.prod_line, if(oc.qty='',0,oc.qty) as qty, 'Change' as Rec_Type, IF (SUBSTRING (CHANGE_DATE ,1 ,4 )>= '1900' AND SUBSTRING (CHANGE_DATE ,1 ,4 )<= '2999' AND SUBSTRING (CHANGE_DATE ,5 ,2 )<= '12' AND SUBSTRING (CHANGE_DATE ,5 ,2 )>= '01' AND SUBSTRING (CHANGE_DATE ,7 ,2 )<= '31' AND SUBSTRING (CHANGE_DATE ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (CHANGE_DATE ,1 ,4 )+'-' +SUBSTRING (CHANGE_DATE ,5 ,2 )+'-' +SUBSTRING (CHANGE_DATE ,7 ,2 ),"SQL_DATE" ),CONVERT ('1900-01-01' ,SQL_DATE )) as Chg_Date, oc.change_time as chg_time,SUBSTRING (CHANGE_DATE ,1 ,4 ) as OrderYear, SUBSTRING (CHANGE_DATE ,5 ,2 ) as OrderMonth, concat(oc.change_date,oc.change_time) as ChgDT, cust_po as PO from order_changes oc where oc.field_name in ('Extended Amt') and (ltrim(rtrim(after))<>'' or (ltrim(rtrim(after))='' and ltrim(rtrim(before))<>'')) order by oc.change_date, oc.change_time")
+		f.Data.DataTable.CreateFromSQL("dtChanges","con","select oc.order_no, oc.record_no, oc.order_no+oc.record_no as ONL, ltrim(rtrim(oc.before)) as BeforeQty, ltrim(rtrim(oc.after)) as AfterQTY, ltrim(rtrim(oc.before)) as BeforeVal, ltrim(rtrim(oc.after)) as AfterVal, oc.part, oc.locn, oc.prod_line, if(oc.qty='',0,oc.qty) as qty, 'Change' as Rec_Type, IF (SUBSTRING (CHANGE_DATE ,1 ,4 )>= '1900' AND SUBSTRING (CHANGE_DATE ,1 ,4 )<= '2999' AND SUBSTRING (CHANGE_DATE ,5 ,2 )<= '12' AND SUBSTRING (CHANGE_DATE ,5 ,2 )>= '01' AND SUBSTRING (CHANGE_DATE ,7 ,2 )<= '31' AND SUBSTRING (CHANGE_DATE ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (CHANGE_DATE ,1 ,4 )+'-' +SUBSTRING (CHANGE_DATE ,5 ,2 )+'-' +SUBSTRING (CHANGE_DATE ,7 ,2 ),"SQL_DATE" ),CONVERT ('1900-01-01' ,SQL_DATE )) as Chg_Date, oc.change_time as chg_time,SUBSTRING (CHANGE_DATE ,1 ,4 ) as OrderYear, SUBSTRING (CHANGE_DATE ,5 ,2 ) as OrderMonth, concat(oc.change_date,oc.change_time) as ChgDT, cust_po as PO from ORDER_CHG_LINES oc where oc.field_name in ('Extended Amt') and (ltrim(rtrim(after))<>'' or (ltrim(rtrim(after))='' and ltrim(rtrim(before))<>'')) order by oc.change_date, oc.change_time")
+'		f.Data.DataTable.CreateFromSQL("dtDeletes","con","select od.order_no, od.order_line as record_no, od.order_no+od.order_line as ONL, od.total_dollars as BeforeVal, 0 as AfterVal, od.part, od.locn, od.prod_line, if(od.qty='',0,od.qty) as qty, 'Delete' as Rec_Type, IF (SUBSTRING (chg_date ,1 ,4 )>= '1900' AND SUBSTRING (chg_date ,1 ,4 )<= '2999' AND SUBSTRING (chg_date ,5 ,2 )<= '12' AND SUBSTRING (chg_date ,5 ,2 )>= '01' AND SUBSTRING (chg_date ,7 ,2 )<= '31' AND SUBSTRING (chg_date ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (chg_date ,1 ,4 )+'-' +SUBSTRING (chg_date ,5 ,2 )+'-' +SUBSTRING (chg_date ,7 ,2 ),SQL_DATE ),CONVERT ('1900-01-01' ,SQL_DATE )) as chg_date, od.chg_time, SUBSTRING (CHG_DATE ,1 ,4 ) as OrderYear, SUBSTRING (CHG_DATE ,5 ,2 ) as OrderMonth,concat(chg_date,chg_time) as ChgDT, cust_po as PO from order_deletes od where ltrim(rtrim(od.order_line)) not in ('A','B','C') order by od.chg_date, od.chg_time")
+		f.Data.DataTable.CreateFromSQL("dtDeletes","con","select od.order_no, od.order_line as record_no, od.order_no+od.order_line as ONL, if(od.qty='',0,od.qty) as BeforeQty, 0 as AfterQTY, od.total_dollars as BeforeVal, 0 as AfterVal, od.part, od.locn, od.prod_line, if(od.qty='',0,od.qty) as qty, 'Delete' as Rec_Type, IF (SUBSTRING (chg_date ,1 ,4 )>= '1900' AND SUBSTRING (chg_date ,1 ,4 )<= '2999' AND SUBSTRING (chg_date ,5 ,2 )<= '12' AND SUBSTRING (chg_date ,5 ,2 )>= '01' AND SUBSTRING (chg_date ,7 ,2 )<= '31' AND SUBSTRING (chg_date ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (chg_date ,1 ,4 )+'-' +SUBSTRING (chg_date ,5 ,2 )+'-' +SUBSTRING (chg_date ,7 ,2 ),SQL_DATE ),CONVERT ('1900-01-01' ,SQL_DATE )) as chg_date, od.chg_time, SUBSTRING (CHG_DATE ,1 ,4 ) as OrderYear, SUBSTRING (CHG_DATE ,5 ,2 ) as OrderMonth,concat(chg_date,chg_time) as ChgDT, cust_po as PO from order_deletes od where ltrim(rtrim(od.order_line)) not in ('A','B','C') order by od.chg_date, od.chg_time")
+
+		f.Data.DataTable.Merge("dtDeletes","dtChanges",False,2)
+		f.Data.DataTable.Close("dtDeletes")
+		F.Data.DataTable.Merge("dtBookings","dtChanges",FALSE,2)
+		f.Data.DataTable.Close("dtBookings")
+		f.Data.DataTable.AcceptChanges("dtChanges")
+		f.Data.DataView.Create("dtChanges","dvChanges",22,"","Order_NO, Record_no, Chg_date, Chg_time")		
+		'Get the credit memo data by joining AR_OPEN_ITEMS to ORDER_HIST_LINE on the invoice number and customer where batch code = 12.  Merge together with changes.
+'		f.Data.DataTable.createfromsql("dtCreditMemos","con","select distinct '' as order_no, '' as order_line, ar.invoice, 0 as BeforeVal, ar.amt_invoice as AfterVal, 'Credit memo' as Rec_Type, IF (SUBSTRING (ar.date_transaction ,1 ,4 )>= '1900' AND SUBSTRING (ar.date_transaction ,1 ,4 )<= '2999' AND SUBSTRING (ar.date_transaction ,5 ,2 )<= '12' AND SUBSTRING (ar.date_transaction ,5 ,2 )>= '01' AND SUBSTRING (ar.date_transaction ,7 ,2 )<= '31' AND SUBSTRING (ar.date_transaction ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (ar.date_transaction ,1 ,4 )+'-' +SUBSTRING (ar.date_transaction ,5 ,2 )+'-' +SUBSTRING (ar.date_transaction ,7 ,2 ),"SQL_DATE" ),CONVERT ('1900-01-01' ,SQL_DATE )) as Chg_Date, '000000' as chg_time, SUBSTRING (ar.date_transaction ,1 ,4 ) as OrderYear, SUBSTRING (ar.date_transaction ,5 ,2 ) as OrderMonth, concat(ar.date_transaction,'000000') as ChgDT, '' as PO from ar_open_items ar where ar.batch_code=12")
+		f.Data.DataTable.createfromsql("dtCreditMemos","con","select distinct '' as order_no, '' as order_line, ar.invoice, 0 as Beforeqty, 1 as Afterqty, 0 as BeforeVal, ar.amt_invoice as AfterVal, 'Credit memo' as Rec_Type, IF (SUBSTRING (ar.date_transaction ,1 ,4 )>= '1900' AND SUBSTRING (ar.date_transaction ,1 ,4 )<= '2999' AND SUBSTRING (ar.date_transaction ,5 ,2 )<= '12' AND SUBSTRING (ar.date_transaction ,5 ,2 )>= '01' AND SUBSTRING (ar.date_transaction ,7 ,2 )<= '31' AND SUBSTRING (ar.date_transaction ,7 ,2 )>= '01' ,CONVERT (SUBSTRING (ar.date_transaction ,1 ,4 )+'-' +SUBSTRING (ar.date_transaction ,5 ,2 )+'-' +SUBSTRING (ar.date_transaction ,7 ,2 ),"SQL_DATE" ),CONVERT ('1900-01-01' ,SQL_DATE )) as Chg_Date, '000000' as chg_time, SUBSTRING (ar.date_transaction ,1 ,4 ) as OrderYear, SUBSTRING (ar.date_transaction ,5 ,2 ) as OrderMonth, concat(ar.date_transaction,'000000') as ChgDT, '' as PO from ar_open_items ar where ar.batch_code=12")
+		'Fill in the order number and line
+		f.Data.DataTable.CreateFromSQL("dtOrderInvoice","con","select distinct order_no, order_line, customer_po, invoice from order_hist_line")
+		f.Data.Dictionary.CreateFromDatatable("dictOrderNo","dtOrderInvoice","Invoice","Order_no")
+		f.Data.Dictionary.CreateFromDatatable("dictOrderLine","dtOrderInvoice","Invoice","Order_line")
+		f.Data.Dictionary.CreateFromDatatable("dictOrderPO","dtOrderInvoice","Invoice","customer_po")
+		f.Data.Dictionary.SetDefaultReturn("dictOrderNo","")
+		f.Data.Dictionary.SetDefaultReturn("dictOrderLine","")
+		f.Data.Dictionary.SetDefaultReturn("dictOrderPO","")
+		f.Data.DataTable.FillFromDictionary("dtCreditMemos","dictOrderNo","Invoice","Order_No")
+		f.Data.DataTable.FillFromDictionary("dtCreditMemos","dictOrderLine","Invoice","Order_line")
+		f.Data.DataTable.FillFromDictionary("dtCreditMemos","dictOrderPO","Invoice","PO")
+		f.Data.Dictionary.Close("dictOrderNo")
+		f.Data.Dictionary.Close("dictOrderLine")
+		f.Data.Dictionary.Close("dictOrderPO")
+		f.Data.DataTable.Merge("dtCreditMemos","dtChanges",false,2)
+		f.Data.DataTable.Close("dtOrderInvoice")
+		f.Data.DataTable.Close("dtCreditMemos")
+		
+		
+		
+		'Interate through the order list.  For each order, filter the order log for that order and iterate through the log.  For each log item, if it occurs before the approval date, overwrite the order's qty, price, and ext values.  Any log items that occur after the approval date shall be added to the order list.  Each order line record will need to have a before, after, and delta value displayed to be used as booking values for the customer.
+		'	The first order line record in the finished datatable shall have a "before" value of $0, while the "after" values shall be the extended value of the line.
+		'	Subsequent order line records (i.e. changes and deletes) shall use the prior order line record's extended value as the "before" value and the change/delete's value as the "after".
+		'	Delete records must be displayed as negative extended amounts, even though the table does not store them as negatives.
+		'	Credit memos are stored as negative amounts in at batch history, so no mathmatical transformation is needed.
+		'	Changes where After != '' are what should be pulled, as the before and after images in that table are usually stored in separate records and thus hard to parse without a primary key on the table.
+		
+		
+		f.Intrinsic.Control.For(v.Local.iCnt,0,v.Datatable.dtData.RowCount--,1)
+			f.Intrinsic.UI.ChangeWaitStatus("Rebuilding Bookings.  Please Wait.",v.Local.iCnt,0,v.DataTable.dtData.RowCount--)
+			f.Intrinsic.String.Build("Order_no='{0}' and ORDER_LINE='{1}'",v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal,v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal,v.Local.sFilter2)
+			'Make sure this order+line has not been processed yet
+			f.Data.DataTable.select("dtData2",v.Local.sFilter2,v.Local.sRet)
+			f.Intrinsic.Control.If(v.Local.sRet,=,"***NORETURN***")
+				'Set the filter for the changes dataview
+				f.Intrinsic.String.Build("Order_no='{0}' and Record_No='{1}'",v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal,v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal,v.DataTable.dtData(v.Local.iCnt).ChgDT!FieldVal,v.Local.sFilter)
+				f.Data.DataView.SetFilter("dtChanges","dvChanges",v.Local.sFilter)
+				F.Data.DataView.SetSort("dtChanges","dvChanges","Chg_Date, chg_time asc")
+				v.local.fPreviousAmt.Set(0)
+				v.local.lPreviousQty.Set(0)
+				f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges.RowCount,>,0)
+					'Check if the order exists in the new orders table and if not, add it.  Else, edit the value.
+					f.Intrinsic.String.Build("Order_no='{0}' and ORDER_LINE='{1}'",v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal,v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal,v.Local.sFilter2)
+					f.Data.DataView.SetFilter("dtData2","dvData2",v.Local.sFilter2)
+					f.Intrinsic.Control.If(v.DataView.dtData2!dvData2.RowCount,=,0)
+						f.Intrinsic.Math.IsNumeric(v.DataView.dtChanges!dvChanges(0).AfterVal!FieldValTrim,v.Local.bIsNumber)
+						f.Intrinsic.Control.If(v.Local.bIsNumber,=,False)
+							f.Data.datatable.SetValue("dtChanges",v.DataView.dtChanges!dvChanges(0).Datatableindex,"AfterVal",0)
+							f.Data.datatable.SetValue("dtChanges",v.DataView.dtChanges!dvChanges(0).Datatableindex,"AfterQty",0)
+						f.Intrinsic.Control.EndIf
+						
+'						f.Data.DataTable.AddRow("dtData2","ORDER_NO", v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal, "ORDER_LINE", v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal, "Rec_Type", v.DataTable.dtData(v.Local.iCnt).Rec_Type!FieldVal, "ONL", v.DataTable.dtData(v.Local.iCnt).ONL!FieldVal, "DATE_ORDER", v.DataTable.dtData(v.Local.iCnt).Date_Order!FieldVal, "PART", v.DataView.dtChanges!dvChanges(0).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(0).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(0).Prod_Line!FieldVal, "UM_ORDER", v.DataTable.dtData(v.Local.iCnt).UM_Order!FieldVal, "CUSTOMER", v.DataTable.dtData(v.Local.iCnt).Customer!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(0).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.DataView.dtChanges!dvChanges(0).AfterVal!FieldVal, "Net_Change", v.DataView.dtChanges!dvChanges(0).AfterVal!FieldVal, "APPROVED", v.DataTable.dtData(v.Local.iCnt).Approved!FieldVal, "OrderMonth", v.DataTable.dtData(v.Local.iCnt).OrderMonth!FieldVal, "OrderYear", v.DataTable.dtData(v.Local.iCnt).OrderYear!FieldVal, "start_year", v.DataTable.dtData(v.Local.iCnt).start_year!FieldVal, "period", v.DataTable.dtData(v.Local.iCnt).Period!FieldVal, "PO",v.DataTable.dtData(v.Local.iCnt).PO!FieldVal, "Create_Date", v.DataTable.dtData(v.Local.iCnt).Create_Date!FieldVal)
+						f.Data.DataTable.AddRow("dtData2","ORDER_NO", v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal, "ORDER_LINE", v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal, "Rec_Type", v.DataTable.dtData(v.Local.iCnt).Rec_Type!FieldVal, "ONL", v.DataTable.dtData(v.Local.iCnt).ONL!FieldVal, "DATE_ORDER", v.DataTable.dtData(v.Local.iCnt).Date_Order!FieldVal, "PART", v.DataView.dtChanges!dvChanges(0).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(0).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(0).Prod_Line!FieldVal, "UM_ORDER", v.DataTable.dtData(v.Local.iCnt).UM_Order!FieldVal, "CUSTOMER", v.DataTable.dtData(v.Local.iCnt).Customer!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(0).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.DataView.dtChanges!dvChanges(0).AfterVal!FieldVal, "Qty_Change", v.DataView.dtChanges!dvChanges(0).AfterQty!FieldVal, "Net_Change", v.DataView.dtChanges!dvChanges(0).AfterVal!FieldVal, "APPROVED", v.DataTable.dtData(v.Local.iCnt).Approved!FieldVal, "OrderMonth", v.DataTable.dtData(v.Local.iCnt).OrderMonth!FieldVal, "OrderYear", v.DataTable.dtData(v.Local.iCnt).OrderYear!FieldVal, "start_year", v.DataTable.dtData(v.Local.iCnt).start_year!FieldVal, "period", v.DataTable.dtData(v.Local.iCnt).Period!FieldVal, "PO",v.DataTable.dtData(v.Local.iCnt).PO!FieldVal, "Create_Date", v.DataTable.dtData(v.Local.iCnt).Create_Date!FieldVal)
+					f.Intrinsic.Control.EndIf
+					
+					f.Intrinsic.Control.For(v.Local.iCnt2,0,v.DataView.dtChanges!dvChanges.RowCount--,1)
+						'Special section for debugging a specific order
+'						f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).ORDER_NO!FieldVal,=,"0032663","AND",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).record_no!FieldVal,=,"0010")
+'							Function.Intrinsic.Debug.InvokeDebugger
+'							Function.Intrinsic.Debug.Stop
+'							
+'						f.Intrinsic.Control.EndIf
+						
+						'Check if the order and line have already been processed
+						f.Intrinsic.String.Build("Order_no='{0}' and ORDER_LINE='{1}'",v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal,v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal,v.Local.sFilter2)
+						f.Data.DataView.SetFilter("dtData2","dvData2",v.Local.sFilter2)
+						f.Intrinsic.Control.If(v.DataView.dtData2!dvData2.RowCount,=,0)
+						
+						f.Intrinsic.Control.EndIf
+						
+						'Fix negative price on change if a change record is registered that was credit memo issued through quality
+						v.Local.sAfterVal.Set(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).AfterVal!FieldValString)
+						f.Intrinsic.Control.If(v.Local.sAfterVal.right1,=,"-")
+							f.Intrinsic.String.Replace(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).AfterVal!FieldValString,"-","",v.Local.sAfterVal)
+							f.Intrinsic.String.Build("-{0}",v.Local.sAfterVal,v.Local.sAfterVal)
+							f.Intrinsic.String.Build("-{0}",v.Local.sAfterQty,v.Local.sAfterQty)
+							f.Data.DataTable.SetValue("dtChanges",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).datatableindex,"Rec_Type","CM")
+						f.Intrinsic.Control.EndIf
+						'Calculate Price
+						f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,=,"Delete")
+						
+						f.Intrinsic.Control.EndIf
+						f.Intrinsic.Math.IsNumeric(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal,v.Local.bIsNumber)
+						f.Intrinsic.Control.If(v.Local.bIsNumber,=,True,"AND",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal,<>,0)
+							f.Intrinsic.Math.Div(v.Local.sAfterVal.Float,v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal,v.Local.fPrice)
+						f.Intrinsic.Control.Else
+							v.Local.fPrice.Set(0)
+						f.Intrinsic.Control.EndIf
+						'Validate after val so it is numeric
+						f.Intrinsic.Math.IsNumeric(v.Local.sAfterVal,v.Local.bIsNumber)
+						f.Intrinsic.Control.If(v.Local.bIsNumber,=,False)
+							'f.Data.datatable.SetValue("dtChanges",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Datatableindex,"AfterVal",0)
+							v.Local.sAfterVal.Set("0")
+							v.Local.sAfterQty.Set("0")
+						f.Intrinsic.Control.EndIf
+						'Calculate net change
+						f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,=,"Credit Memo","OR",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,=,"CM")
+							v.Local.fNetChange.Set(v.Local.sAfterVal.Float)
+							v.Local.lQtyChange.Set(v.Local.sAfterQty.Float)
+						f.Intrinsic.Control.ElseIf(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,=,"Delete")
+							f.Intrinsic.Math.Mult(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeVal!FieldValFloat,-1,v.Local.fNetChange)
+							f.Intrinsic.Math.Mult(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeQty!FieldValFloat,-1,v.Local.lQtyChange)
+						f.Intrinsic.Control.ElseIf(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeVal!FieldVal,<>,"","AND",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).AfterVal!FieldVal,<>,"",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeVal!FieldValFloat,<>,0)
+							f.Intrinsic.Math.Sub(v.Local.sAfterVal.Float,v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeVal!FieldValFloat,v.Local.fNetChange)
+							f.Intrinsic.Math.Sub(v.Local.sAfterVal.Float,v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeQty!FieldValFloat,v.Local.lQtyChange)
+							f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeVal!FieldValFloat,>,v.Local.sAfterVal.Float)
+								f.Intrinsic.Math.Mult(v.Local.fNetChange,-1,v.Local.fNetChange)
+								f.Intrinsic.Math.Mult(v.Local.lQtyChange,-1,v.Local.lQtyChange)
+							f.Intrinsic.Control.EndIf
+						f.Intrinsic.Control.Else
+							f.Intrinsic.Math.Sub(v.Local.sAfterVal,v.Local.fPreviousAmt,v.Local.fNetChange)
+							f.Intrinsic.Math.Sub(v.Local.sAfterQty,v.local.lPreviousQty,v.Local.lQtyChange)
+						f.Intrinsic.Control.EndIf
+						
+						'If change occured before the order was approved, overwrite the order values, keeping the before amount as 0
+						f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal,<=,v.DataTable.dtData(v.Local.iCnt).Date_Order!FieldVal)
+	'						f.Intrinsic.String.Build("Order_no='{0}' and ORDER_LINE='{1}'",v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal,v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal,v.Local.sFilter2)
+	'						f.Data.DataView.SetFilter("dtData2","dvData2",v.Local.sFilter2)
+							f.Intrinsic.Control.If(v.DataView.dtData2!dvData2.RowCount,=,0)
+'								f.Data.DataTable.AddRow("dtData2","ORDER_NO", v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal, "ORDER_LINE", v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal, "Rec_Type", v.DataTable.dtData(v.Local.iCnt).Rec_Type!FieldVal, "ONL", v.DataTable.dtData(v.Local.iCnt).ONL!FieldVal, "DATE_ORDER", v.DataTable.dtData(v.Local.iCnt).Date_Order!FieldVal, "PART", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Prod_Line!FieldVal, "UM_ORDER", v.DataTable.dtData(v.Local.iCnt).UM_Order!FieldVal, "CUSTOMER", v.DataTable.dtData(v.Local.iCnt).Customer!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.Local.sAfterVal, "Net_Change", v.Local.sAfterVal, "APPROVED", v.DataTable.dtData(v.Local.iCnt).Approved!FieldVal, "OrderMonth", v.DataTable.dtData(v.Local.iCnt).OrderMonth!FieldVal, "OrderYear", v.DataTable.dtData(v.Local.iCnt).OrderYear!FieldVal, "start_year", v.DataTable.dtData(v.Local.iCnt).start_year!FieldVal, "period", v.DataTable.dtData(v.Local.iCnt).Period!FieldVal, "PO",v.DataTable.dtData(v.Local.iCnt).PO!FieldVal, "Create_Date", v.DataTable.dtData(v.Local.iCnt).Create_Date!FieldVal)
+								f.Data.DataTable.AddRow("dtData2","ORDER_NO", v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal, "ORDER_LINE", v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal, "Rec_Type", v.DataTable.dtData(v.Local.iCnt).Rec_Type!FieldVal, "ONL", v.DataTable.dtData(v.Local.iCnt).ONL!FieldVal, "DATE_ORDER", v.DataTable.dtData(v.Local.iCnt).Date_Order!FieldVal, "PART", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Prod_Line!FieldVal, "UM_ORDER", v.DataTable.dtData(v.Local.iCnt).UM_Order!FieldVal, "CUSTOMER", v.DataTable.dtData(v.Local.iCnt).Customer!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.Local.sAfterVal, "Qty_Change", v.Local.sAfterQty, "Net_Change", v.Local.sAfterVal, "APPROVED", v.DataTable.dtData(v.Local.iCnt).Approved!FieldVal, "OrderMonth", v.DataTable.dtData(v.Local.iCnt).OrderMonth!FieldVal, "OrderYear", v.DataTable.dtData(v.Local.iCnt).OrderYear!FieldVal, "start_year", v.DataTable.dtData(v.Local.iCnt).start_year!FieldVal, "period", v.DataTable.dtData(v.Local.iCnt).Period!FieldVal, "PO",v.DataTable.dtData(v.Local.iCnt).PO!FieldVal, "Create_Date", v.DataTable.dtData(v.Local.iCnt).Create_Date!FieldVal)
+'							f.Intrinsic.Control.Elseif(v.DataView.dtData2!dvData2.RowCount,=,1)
+								'If the current change record is a Delete, delete the datatable row
+								f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,=,"Delete")
+									f.Data.DataTable.DeleteRow("dtData2",v.DataView.dtData2!dvData2(0).datatableindex)
+								f.Intrinsic.Control.Else
+									'Else, Update the row
+'									f.Data.DataTable.SetValue("dtData2",v.DataView.dtData2!dvData2(0).datatableindex,"PART", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Prod_Line!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.Local.sAfterVal, "Net_Change", v.Local.sAfterVal)
+									f.Data.DataTable.SetValue("dtData2",v.DataView.dtData2!dvData2(0).datatableindex,"PART", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Prod_Line!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.Local.sAfterVal, "Qty_Change", v.Local.sAfterQty, "Net_Change", v.Local.sAfterVal)
+								f.Intrinsic.Control.EndIf
+							f.Intrinsic.Control.EndIf
+						f.Intrinsic.Control.Else
+							'If after, add change as new record
+							'Calculate the order month and year, along with the GL period and year
+							f.Intrinsic.Date.Year(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal,v.Local.iYear)
+							f.Intrinsic.Date.Month(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal,v.Local.iMonth)
+							f.Intrinsic.String.LPad(v.Local.iMonth,"0",2,v.Local.sMonth)
+							f.Intrinsic.Date.GLPeriodFromDate(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal,v.Local.sGLPeriod)
+							f.Intrinsic.String.Split(v.Local.sGLPeriod,"*!*",v.local.sGLPeriod)	'Should return [Period]*!*[StartYear]
+							
+							f.Intrinsic.Control.If(v.Local.fNetChange,<>,0)
+								'If this is a delete line, flip the qty negative and calculate the price
+								f.Intrinsic.Control.If(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,=,"Delete")
+									f.Intrinsic.Math.Mult(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldValfloat,v.DataView.dtChanges!dvChanges(v.Local.iCnt2).BeforeVal!FieldValfloat,v.Local.fPrice)
+									f.Intrinsic.Math.Mult(v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldValfloat,-1,v.Local.fQty)
+									f.Data.DataTable.SetValue("dtChanges",v.DataView.dtChanges!dvChanges(v.Local.icnt2).datatableindex,"Qty",v.Local.fQty)
+								f.Intrinsic.Control.EndIf
+		
+								'If this is a booking line and the order type has already been added, do not add the line a second time
+								f.Intrinsic.Control.If(v.DataView.dtData2!dvData2.RowCount,>,0,"AND",v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal,<>,"Booking")
+'									f.Data.DataTable.AddRow("dtData2","ORDER_NO", v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal, "ORDER_LINE", v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal, "Rec_Type", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal, "ONL", v.DataTable.dtData(v.Local.iCnt).ONL!FieldVal, "DATE_ORDER", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal, "PART", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Prod_Line!FieldVal, "UM_ORDER", v.DataTable.dtData(v.Local.iCnt).UM_Order!FieldVal, "CUSTOMER", v.DataTable.dtData(v.Local.iCnt).Customer!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.Local.sAfterVal.Float, "Net_Change", v.Local.fNetChange, "APPROVED", v.DataTable.dtData(v.Local.iCnt).Approved!FieldVal, "OrderMonth", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).OrderMonth!FieldVal, "OrderYear", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).OrderYear!FieldVal, "start_year", v.Local.sGLPeriod(1), "period", v.Local.sGLPeriod(0), "PO",v.DataTable.dtData(v.Local.iCnt).PO!FieldVal, "Create_Date", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal)
+									f.Data.DataTable.AddRow("dtData2","ORDER_NO", v.DataTable.dtData(v.Local.iCnt).Order_NO!FieldVal, "ORDER_LINE", v.DataTable.dtData(v.Local.iCnt).Order_Line!FieldVal, "Rec_Type", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Rec_Type!FieldVal, "ONL", v.DataTable.dtData(v.Local.iCnt).ONL!FieldVal, "DATE_ORDER", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal, "PART", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Part!FieldVal, "LOCATION", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Locn!FieldVal, "PRODUCT_LINE", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Prod_Line!FieldVal, "UM_ORDER", v.DataTable.dtData(v.Local.iCnt).UM_Order!FieldVal, "CUSTOMER", v.DataTable.dtData(v.Local.iCnt).Customer!FieldVal, "qty_ordered", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Qty!FieldVal, "PRICE", v.Local.fPrice, "AMOUNT", v.Local.sAfterVal.Float, "Qty_Change", v.Local.lQtyChange,"Net_Change", v.Local.fNetChange, "APPROVED", v.DataTable.dtData(v.Local.iCnt).Approved!FieldVal, "OrderMonth", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).OrderMonth!FieldVal, "OrderYear", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).OrderYear!FieldVal, "start_year", v.Local.sGLPeriod(1), "period", v.Local.sGLPeriod(0), "PO",v.DataTable.dtData(v.Local.iCnt).PO!FieldVal, "Create_Date", v.DataView.dtChanges!dvChanges(v.Local.iCnt2).Chg_Date!FieldVal)
+								f.Intrinsic.Control.EndIf
+							f.Intrinsic.Control.EndIf
+						f.Intrinsic.Control.EndIf
+						'set the last known dollar amount
+						v.Local.fPreviousAmt.Set(v.Local.sAfterVal.Float)
+						v.local.lPreviousQty.Set(v.Local.sAfterQty.Float)
+					f.Intrinsic.Control.Next(v.Local.iCnt2)
+				f.Intrinsic.Control.EndIf
+			f.Intrinsic.Control.EndIf
+			
+		f.Intrinsic.Control.Next(v.Local.iCnt)
+		
+		'Fill in the customer name and country
+		f.Data.DataTable.FillFromDictionary("dtData2","dictCustName","Customer","Customer_Name")
+		f.Data.DataTable.FillFromDictionary("dtData2","dictCustCntry","Customer","CUSTOMER_CNTRY_CODE")
+		
+		'Merge in the final oresults to dtData3
+		f.Data.DataTable.Merge("dtData2","dtData3",False,2)
+		
+		f.Data.DataTable.AddDisplayPartColumn("dtData2",v.Enum.LongPartType!Part,"Part","Display_Part","Display_Rev")
+		f.Data.DataTable.AddDisplayPartColumn("dtData3",v.Enum.LongPartType!Part,"Part","Display_Part","Display_Rev")
+		
+		'Filter dtData3 by date and saveToDB
+		f.Intrinsic.String.Build("DATE_ORDER >= '{0}'",V.Local.dStartDate.PervasiveDate,V.Local.sWhere)
+		f.Data.dataview.SetFilter("dtdata3","dvData3",v.Local.sWhere)
+		f.Data.DataView.ToDataTable("dtData3","dvData3","dtFinalData")
+		
+		f.Intrinsic.String.Build("delete from gcg_6208_bookings where date_order >= '{0}'",v.Local.dStartDate.PervasiveDate,v.Local.sSQL)
+		f.ODBC.Connection!con.Execute(v.Local.sSQL)		
+		
+		f.Intrinsic.Control.For(v.Local.iCnt,0,v.DataTable.dtfinaldata.RowCount--,1)
+			f.Intrinsic.Control.If(V.DataTable.DTFINALDATA(V.Local.iCnt).APPROVED!FieldVal,=,True)
+				v.Local.iApproved.Set(1)
+			f.Intrinsic.Control.Else
+				v.Local.iApproved.Set(0)
+			f.Intrinsic.Control.EndIf
+			'f.Intrinsic.String.Build("insert into gcg_6208_bookings (ORDER_NO, ORDER_LINE, REC_TYPE, ONL, REV, DATE_ORDER, CREATE_DATE, PO, PART, DISPLAY_PART, LOCATION, PRODUCT_LINE, UM_ORDER, CUSTOMER, CUSTOMER_NAME, CUSTOMER_CNTRY_CODE, qty_ordered, PRICE, AMOUNT, Net_Change, APPROVED, OrderMonth, OrderYear, start_year, period) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}', '{15}', {16}, {17}, {18}, {19}, {20}, '{21}', '{22}', '{23}', '{24}')", V.DataTable.DTFINALDATA(V.Local.iCnt).ORDER_NO!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).ORDER_LINE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).REC_TYPE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).ONL!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).REV!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).DATE_ORDER!FieldValPervasiveDate, V.DataTable.DTFINALDATA(V.Local.iCnt).CREATE_DATE!FieldValPervasiveDate, V.DataTable.DTFINALDATA(V.Local.iCnt).PO!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).PART!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).DISPLAY_PART!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).LOCATION!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).PRODUCT_LINE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).UM_ORDER!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).CUSTOMER!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).CUSTOMER_NAME!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).CUSTOMER_CNTRY_CODE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).qty_ordered!FieldValfloat, V.DataTable.DTFINALDATA(V.Local.iCnt).PRICE!FieldValfloat, V.DataTable.DTFINALDATA(V.Local.iCnt).AMOUNT!FieldValfloat, V.DataTable.DTFINALDATA(V.Local.iCnt).Net_Change!FieldValfloat, v.Local.iApproved.String, V.DataTable.DTFINALDATA(V.Local.iCnt).OrderMonth!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).OrderYear!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).start_year!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).period!FieldValTrim, v.Local.sSQL)
+			f.Intrinsic.String.Build("insert into gcg_6208_bookings(ORDER_NO, ORDER_LINE, REC_TYPE, ONL, REV, DATE_ORDER, CREATE_DATE, PO, PART, DISPLAY_PART, LOCATION, PRODUCT_LINE, UM_ORDER, CUSTOMER, CUSTOMER_NAME, CUSTOMER_CNTRY_CODE, qty_ordered, PRICE, AMOUNT, Net_Change, APPROVED, OrderMonth, OrderYear, start_year, period, QTY_Change) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}', '{15}', {16}, {17}, {18}, {19}, {20}, '{21}', '{22}', '{23}', '{24}',{25})", V.DataTable.DTFINALDATA(V.Local.iCnt).ORDER_NO!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).ORDER_LINE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).REC_TYPE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).ONL!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).REV!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).DATE_ORDER!FieldValPervasiveDate, V.DataTable.DTFINALDATA(V.Local.iCnt).CREATE_DATE!FieldValPervasiveDate, V.DataTable.DTFINALDATA(V.Local.iCnt).PO!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).PART!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).DISPLAY_PART!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).LOCATION!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).PRODUCT_LINE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).UM_ORDER!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).CUSTOMER!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).CUSTOMER_NAME!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).CUSTOMER_CNTRY_CODE!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).qty_ordered!FieldValfloat, V.DataTable.DTFINALDATA(V.Local.iCnt).PRICE!FieldValfloat, V.DataTable.DTFINALDATA(V.Local.iCnt).AMOUNT!FieldValfloat, V.DataTable.DTFINALDATA(V.Local.iCnt).Net_Change!FieldValfloat, v.Local.iApproved.String, V.DataTable.DTFINALDATA(V.Local.iCnt).OrderMonth!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).OrderYear!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).start_year!FieldValTrim, V.DataTable.DTFINALDATA(V.Local.iCnt).period!FieldValTrim,V.DataTable.DTFINALDATA(V.Local.iCnt).Qty_Change!FieldVal, v.Local.sSQL)
+'			
+			f.ODBC.Connection!con.Execute(v.Local.sSQL)
+		f.Intrinsic.Control.Next(v.Local.iCnt)
+	f.Intrinsic.Control.Catch
+		Function.Intrinsic.Debug.Stop
+		
+		F.Intrinsic.Control.CallSub(ErrorMsg) 
+	f.Intrinsic.Control.Finally
+		f.Intrinsic.UI.CloseWaitDialog()
+		f.ODBC.Connection!con.Close
+	f.Intrinsic.Control.EndTry
+Program.Sub.LoadOrders.End
+
+Program.Sub.BuildDictionaries.Start
+	v.Local.bExists.Declare
+	'Fill in Cust Name, Country Code
+	f.Data.DataTable.CreateFromSQL("dtCustMstr","con","select customer, ltrim(rtrim(name_customer)) as name_customer, ltrim(rtrim(country)) as Country from v_customer_master",True)
+	f.Data.Dictionary.createfromdatatable("dictCustName","dtCustMstr","Customer","Name_Customer")
+	f.Data.Dictionary.SetDefaultReturn("dictCustName","")
+	f.Data.Dictionary.createfromdatatable("dictCustCntry","dtCustMstr","Customer","country")
+	f.Data.Dictionary.SetDefaultReturn("dictCustCntry","")
+Program.Sub.BuildDictionaries.End
+
+Program.Sub.LoadEmpties.Start
+'	v.Local.sSQL.Declare(String,"select B.ORDER_NO, B.RECORD_NO AS ORDER_LINE, 'Booking' as Rec_Type, b.order_no+b.RECORD_NO as ONL, '' AS REV, convert(A.APPROVAL_DATE,sql_date) AS DATE_ORDER, b.date_order as Create_Date, '' AS PO, COALESCE(B.PART,'') AS PART, '' AS DISPLAY_PART, '' as DISPLAY_REV, B.LOCATION, B.PRODUCT_LINE, B.UM_ORDER, B.CUSTOMER, '' AS CUSTOMER_NAME, '' AS CUSTOMER_CNTRY_CODE, B.qty_bo as qty_ordered, B.PRICE, B.EXTENSION AS AMOUNT, b.extension as Net_Change, A.APPROVAL_FLAG AS APPROVED, MONTH(convert(A.APPROVAL_DATE,sql_date)) as OrderMonth, YEAR(convert(A.APPROVAL_DATE,sql_date)) as OrderYear, gl.start_year, gl.period FROM V_ORDER_LINES B inner join GCG_6093_SO_LINE_APP a on b.order_no=a.order_no and b.RECORD_NO=a.order_line inner join V_GL_CALENDAR GL ON convert(a.approval_date,sql_date) >= convert(GL.BEG_DATE,sql_date) AND convert(a.approval_date,sql_date) <= convert(GL.END_DATE,sql_date) WHERE 1=0")
+	v.Local.sSQL.Declare(String,"select B.ORDER_NO, B.RECORD_NO AS ORDER_LINE, 'Booking' as Rec_Type, b.order_no+b.RECORD_NO as ONL, '' AS REV, convert(A.APPROVAL_DATE,sql_date) AS DATE_ORDER, b.date_order as Create_Date, '' AS PO, COALESCE(B.PART,'') AS PART, '' AS DISPLAY_PART, '' as DISPLAY_REV, B.LOCATION, B.PRODUCT_LINE, B.UM_ORDER, B.CUSTOMER, '' AS CUSTOMER_NAME, '' AS CUSTOMER_CNTRY_CODE, B.qty_bo as qty_ordered,B.qty_bo as Qty_Change, B.PRICE, B.EXTENSION AS AMOUNT, b.extension as Net_Change, A.APPROVAL_FLAG AS APPROVED, MONTH(convert(A.APPROVAL_DATE,sql_date)) as OrderMonth, YEAR(convert(A.APPROVAL_DATE,sql_date)) as OrderYear, gl.start_year, gl.period FROM V_ORDER_LINES B inner join GCG_6093_SO_LINE_APP a on b.order_no=a.order_no and b.RECORD_NO=a.order_line inner join V_GL_CALENDAR GL ON convert(a.approval_date,sql_date) >= convert(GL.BEG_DATE,sql_date) AND convert(a.approval_date,sql_date) <= convert(GL.END_DATE,sql_date) WHERE 1=0")
+	f.Data.DataTable.CreateFromSQL("dtData2","con",v.Local.sSQL,True)
+	f.Data.DataTable.CreateFromSQL("dtData3","con",v.Local.sSQL,True)
+	f.Data.DataTable.AddDisplayPartColumn("dtData2",v.Enum.LongPartType!Part,"Part","Display_Part","Display_Rev")
+	f.Data.DataTable.AddDisplayPartColumn("dtData3",v.Enum.LongPartType!Part,"Part","Display_Part","Display_Rev")
+	f.Data.DataView.Create("dtData2","dvData2",22)
+	f.Data.DataView.Create("dtData3","dvData3",22)
+Program.Sub.LoadEmpties.End
+
+Program.Sub.ErrorMsg.Start
+v.Local.sDateTime.Declare
+v.Local.sFile.Declare
+v.Local.sError.Declare
+v.Local.bRet.Declare
+
+f.Intrinsic.String.Build("{0}\CUSTOM\6208\",v.Caller.GlobalDir,v.Local.sFile)
+f.Intrinsic.File.DirExists(v.Local.sFile,v.Local.bRet)
+f.Intrinsic.Control.If(v.Local.bRet,=,False)
+	f.Intrinsic.File.CreateDir(v.Local.sFile)
+f.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.DateString(v.Ambient.Date,v.Local.sDateTime)
+f.Intrinsic.String.Build("{0}GCG_6208_Error_{1}.txt",v.Local.sFile,v.Local.sDateTime,v.Local.sFile)
+F.Intrinsic.String.Build("{0}{1}Subroutine: {2}{1}ErrorNo: {3}{1}ErrorDesc: {4}",v.Ambient.Date,v.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,v.Local.sError)
+Function.Intrinsic.Debug.Stop
+
+f.Intrinsic.File.String2File(v.Local.sFile,v.Local.sError)
+Program.Sub.ErrorMsg.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$rnair$}$20210622122309371$}$JUGEdtlNdgRUPvge2DQ26bz/1piQWHOn188HfrXJrnocpe85Db/sgXgLGOXVMLFm5mjL5nUlAj8=
+Program.Sub.Comments.End
