@@ -1,0 +1,386 @@
+﻿Program.Sub.ScreenSU.Start
+Gui.frmMain..Create(DashForm)
+Gui.frmMain..Size(1089,776)
+Gui.frmMain..MinX(1016)
+Gui.frmMain..MinY(696)
+Gui.frmMain..Position(0,0)
+Gui.frmMain..BackColor(-2147483633)
+Gui.frmMain..MousePointer(0)
+Gui.frmMain..Event(UnLoad,frmMain_UnLoad)
+Gui.frmMain..Caption("Gridview Template")
+Gui.frmMain..AlwaysOnTop(False)
+Gui.frmMain..FontName("Tahoma")
+Gui.frmMain..FontSize(8.25)
+Gui.frmMain..ControlBox(True)
+Gui.frmMain..MaxButton(True)
+Gui.frmMain..MinButton(True)
+Gui.frmMain..Moveable(True)
+Gui.frmMain..Sizeable(True)
+Gui.frmMain..ShowInTaskBar(True)
+Gui.frmMain..TitleBar(True)
+Gui.frmMain..BarExportButton(True)
+Gui.frmMain..BarRefreshButton(True)
+Gui.frmMain..BarSearchBox(False)
+Gui.frmMain..Event(ExportClick,frmMain_ExportClick)
+Gui.frmMain..Event(RefreshClick,frmMain_RefreshClick)
+Gui.frmMain..BarAddButton("ResetGridLayout","Reset Grid Layout",V.Enum.Image!LAYOUT_RESET_COLOR)
+Gui.frmMain..BarAddButton("SaveGridLayout","Save Grid Layout",V.Enum.Image!LAYOUT_SAVE_COLOR)
+Gui.frmMain..Event(UserButtonClicked,frmMain_UserButtonClicked)
+Gui.frmMain.GsGCData.Create(GsGridControl)
+Gui.frmMain.GsGCData.Enabled(True)
+Gui.frmMain.GsGCData.Visible(True)
+Gui.frmMain.GsGCData.Zorder(0)
+Gui.frmMain.GsGCData.Size(1089,665)
+Gui.frmMain.GsGCData.Position(0,45)
+Gui.frmMain.GsGCData.Dock(2)
+Gui.frmMain.lbl1.Create(Label,"Date Type",True,50,13,0,9,12,True,0,"Tahoma",8.25,,0,0)
+Gui.frmMain.lbl1.BorderStyle(0)
+Gui.frmMain.ddlDateType.Create(DropDownList)
+Gui.frmMain.ddlDateType.Enabled(True)
+Gui.frmMain.ddlDateType.Visible(True)
+Gui.frmMain.ddlDateType.Zorder(0)
+Gui.frmMain.ddlDateType.Size(157,20)
+Gui.frmMain.ddlDateType.Position(66,8)
+Gui.frmMain.ddlDateType.FontName("Tahoma")
+Gui.frmMain.ddlDateType.FontSize(8.25)
+Gui.frmMain.ddlDateType.Event(Change,ddlDateType_Change)
+Gui.frmMain.lbl2.Create(Label,"Year + Month",True,66,13,0,242,12,True,0,"Tahoma",8.25,,0,0)
+Gui.frmMain.lbl2.BorderStyle(0)
+Gui.frmMain.txtDate.Create(TextBox,"",True,100,20,0,317,8,True,0,"Tahoma",8.25,,1)
+Gui.frmMain.cmdBrwsDate.Create(Button)
+Gui.frmMain.cmdBrwsDate.Enabled(True)
+Gui.frmMain.cmdBrwsDate.Visible(True)
+Gui.frmMain.cmdBrwsDate.Zorder(0)
+Gui.frmMain.cmdBrwsDate.Size(29,23)
+Gui.frmMain.cmdBrwsDate.Position(421,6)
+Gui.frmMain.cmdBrwsDate.Caption("")
+Gui.frmMain.cmdBrwsDate.FontName("Tahoma")
+Gui.frmMain.cmdBrwsDate.FontSize(8.25)
+Gui.frmMain.cmdBrwsDate.SvgPicture("icon_browser_color")
+Gui.frmMain.cmdBrwsDate.Event(Click,cmdBrwsDate_Click)
+Gui.frmMain.monthView1.Create(MonthView)
+Gui.frmMain.monthView1.Enabled(True)
+Gui.frmMain.monthView1.Visible(False)
+Gui.frmMain.monthView1.Zorder(0)
+Gui.frmMain.monthView1.Size(244,219)
+Gui.frmMain.monthView1.Position(439,68)
+Gui.frmMain.monthView1.Event(Change,monthView1_Change)
+Gui.frmMain.lbl3.Create(Label,"Location",True,40,13,0,467,12,True,0,"Tahoma",8.25,,0,0)
+Gui.frmMain.lbl3.BorderStyle(0)
+Gui.frmMain.ddlLocation.Create(DropDownList)
+Gui.frmMain.ddlLocation.Enabled(True)
+Gui.frmMain.ddlLocation.Visible(True)
+Gui.frmMain.ddlLocation.Zorder(0)
+Gui.frmMain.ddlLocation.Size(45,20)
+Gui.frmMain.ddlLocation.Position(524,8)
+Gui.frmMain.ddlLocation.FontName("Tahoma")
+Gui.frmMain.ddlLocation.FontSize(8.25)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+	V.Global.bLoadData.Declare
+	V.Global.sGridViews.Declare
+	V.Global.sSQL.Declare
+	v.Global.bCmdBrwsCalOpen.Declare
+Program.External.Include.Library("GCG_6208_UniversalFunctions.lib")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Daniel Duncan
+'Customer: TE Connectivity
+'Program Name: Order Bookings Dashboard
+'Date Started: 12/1/2020
+'Description: This dashboard displays all order lines with bookings, changes, deletes, and credit memo records split out.
+
+Function.Intrinsic.UI.UsePixels ' Allows you to use Pixels instead of Twips throughout
+V.Local.sArt.Declare
+
+'*************************************************************************************************
+'************* Start Dashboard Template Stuff
+
+'Set main form title here.  Could be handled in the forms designer, too...
+'If you set this in the forms designer, make sure this line is commented.
+Gui.frmMain..Caption("Bookings Dashboard")
+
+'Set list of controls (grids) that should have their preferences saved.  You know, so they grids load the same way the user left them.
+'FORMNAME*!*CONTROLNAME*!*GRIDVIEWNAME#$#form*!*gsgridcontrol*!*gridview#$#etc*!*etc*!*etc
+'Wash/rinse/repeat for each gridview that you want to store.
+'If there is only one gridview to maintain, only supply the single reference.
+V.Global.sGridViews.Set("frmMain*!*GsGCData*!*gvData")
+
+'Set Anchors
+'For the primary control layout items, anchor them to an area of the screen and then resize is automagic.
+'0 - None
+'1 - Top
+'2 - Bottom
+'4 - Left
+'8 - Right
+Gui.frmMain.GsGCData.Anchor(15)
+
+'Set ARC ID
+'Grabs the ARCID from the filename for use with saving/restoring grid preferences.  So make sure you stick with the file naming convention!
+'Typical file naming convention: DDD_IIII_Description.g2u
+'DDD=Department (GCG, ATG, GAB, etc.)
+'IIII=Reserved ARC ID (5849, 1234, whatever)
+'Description=Short Description of Project
+'Example: GCG_5849_UltimateDashboard.g2u
+F.Intrinsic.Control.CallSub(SetARCID)
+
+'Open DB Connection
+F.ODBC.Connection!con.OpenCompanyConnection(500)
+
+f.Intrinsic.Control.CallSub(BuildDictionaries)
+f.Intrinsic.Control.CallSub(LoadEmpties)
+f.Intrinsic.Control.CallSub(SetDropdowns)
+
+'Make the main form visible
+Gui.frmMain..Show
+
+'load grid preferences
+'technically template stuff.
+F.Intrinsic.Control.CallSub(Deserialize)
+
+Program.Sub.Main.End
+
+Program.Sub.frmMain_UnLoad.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+		
+		F.Intrinsic.Control.If(V.Global.bLoadData)
+			F.Intrinsic.Control.CallSub(Serialize)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Connection!con.Close
+		F.Intrinsic.Control.End
+		
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.frmMain_UnLoad.End
+
+Program.Sub.frmMain_ExportClick.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+		
+		F.Intrinsic.Control.CallSub(ExportGrid,"sGridControls","frmMain*!*GsGCData")
+		
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.frmMain_ExportClick.End
+Program.Sub.SetDropdowns.Start
+	gui.frmMain.ddlDateType.AddItem(" ")
+	gui.frmMain.ddlDateType.AddItem("Fiscal")
+	gui.frmMain.ddlDateType.AddItem("Calendar")
+	gui.frmMain.ddlDateType.text("Fiscal")	
+	
+	f.Data.Dictionary.CreateFromSQL("dictLoc","con","select location, location as Loc2 from v_locations")
+	gui.frmMain.ddlLocation.AddItems("Dictionary","dictLoc")
+	gui.frmMain.ddlLocation.ListIndex(0)
+Program.Sub.SetDropdowns.End
+
+Program.Sub.frmMain_RefreshClick.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+'		gui.frmMain..ShowAlert("Loading","Rebuilding Data","Rebuilding Bookings.  Please Wait.",v.Enum.Image!REFRESH_COLOR)
+'		gui.frmMain..UpdateAlertProperty("Loading",v.Enum.AlertPropertyNames!DurationInMs,5000)
+'		Function.Intrinsic.UI.SleepMS(2000) ' Wait to allow the Marquee to scroll
+		
+		GUI.frmMain..Enabled(FALSE)
+		F.Intrinsic.Control.CallSub(Serialize)
+		F.Intrinsic.Control.CallSub(LoadOrders)
+		F.Intrinsic.Control.CallSub(Deserialize)
+'		gui.frmMain..HideAlert("Loading")
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.Finally
+		GUI.frmMain..Enabled(TRUE)
+		f.Intrinsic.UI.CloseWaitDialog()
+	F.Intrinsic.Control.EndTry
+Program.Sub.frmMain_RefreshClick.End
+
+Program.Sub.frmMain_UserButtonClicked.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+		
+		'V.ARGS.BUTTON: ButtonName of the button clicked (not the text/caption, but the control name)...
+		'From ScreenSU...
+		'                           ButtonName
+		'                           \/
+		'Gui.frmMain..BarAddButton("ResetColumns","Reset Columns",V.Enum.Image!LAYOUT_RESET_COLOR)
+		
+		F.Intrinsic.Control.SelectCase(V.Args.Button)
+			
+			F.Intrinsic.Control.Case("ResetGridLayout")
+				F.Intrinsic.Control.CallSub(ResetGrid,"sGridViewName","GVData")
+				F.Intrinsic.Control.CallSub(LoadData, "sDataTableName","dtData","sFormName","frmMain","sGridControlName","GsGCData","sGridViewName","gvData","sSQL",V.Global.sSQL)
+				F.Intrinsic.Control.CallSub(Deserialize)
+				
+			F.Intrinsic.Control.Case("SaveGridLayout")
+				F.Intrinsic.Control.CallSub(Serialize)
+				
+		F.Intrinsic.Control.EndSelect
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	F.Intrinsic.Control.EndTry
+Program.Sub.frmMain_UserButtonClicked.End
+
+Program.Sub.LoadOrders.Start
+	v.Local.iCnt.Declare
+	v.Local.iCnt2.Declare
+	v.Local.sFilter.Declare
+	v.Local.sFilter2.Declare
+	v.Local.fPrice.Declare
+	v.Local.fAmount.Declare
+	v.Local.sMonth.Declare
+	v.Local.sYear.Declare
+	v.Local.sGLYear.Declare
+	v.Local.sGLPeriod.Declare
+	v.Local.iMonth.Declare
+	v.Local.iYear.Declare
+	v.Local.iGLYear.Declare
+	v.Local.iGLPeriod.Declare
+	v.Local.bIsNumber.Declare
+	v.Local.sDateTime.Declare
+	v.Local.sSign.Declare
+	v.Local.fPreviousAmt.Declare
+	v.Local.fNetChange.Declare
+	v.Local.sAfterVal.Declare
+	v.Local.sRet.Declare
+	v.Local.fQty.Declare
+	v.Local.sWhere.Declare
+	V.Local.iRet.Declare
+	v.Local.sSQL.Declare
+	f.Intrinsic.Control.Try	
+		'Build the filter criteria		
+		f.Intrinsic.Control.If(v.Screen.frmMain!txtDate.Text,<>,"")	
+			f.Intrinsic.String.Split(v.Screen.frmMain!txtDate.Text," ",v.Local.sRet)
+			F.Intrinsic.Control.If(V.Screen.frmMain!ddlDateType.Text,=,"Fiscal")
+				f.Intrinsic.String.Build("START_YEAR={0} and PERIOD='{1}'",v.Local.sRet(0),v.Local.sRet(1),v.Local.sWhere)	
+			f.Intrinsic.Control.Else
+				f.Intrinsic.String.Build("OrderYear={0} and OrderMonth={1}",v.Local.sRet(0),v.Local.sRet(1),v.Local.sWhere)	
+			f.Intrinsic.Control.EndIf
+			
+			f.Intrinsic.String.Build("and {0}",V.Local.sWhere,V.Local.sWhere)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Refresh is going to load ALL customer information. Continue?","Refresh",4,V.Local.iRet)
+			F.Intrinsic.Control.If(V.Local.iRet,!=,6)
+				v.Local.sWhere.Set("")
+				f.Intrinsic.Control.ExitSub
+			F.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.EndIf
+		
+		'Set wait dialog here
+		f.Intrinsic.UI.InvokeWaitDialog("Rebuilding Bookings.  Please Wait.","ARC 6208 Loading")
+
+		F.Intrinsic.String.Build("select * from GCG_6208_BOOKINGS WHERE location='{0}' {1}",v.Screen.frmMain!ddlLocation.Text,V.Local.sWhere,V.Local.sSQL)
+		
+		f.Data.DataTable.CreateFromSQL("dtData","con",v.Local.sSQL)
+		
+		'Create blank dummy table for adding order change and deletion lines to be combined later
+		f.Intrinsic.Control.If(v.DataTable.dtData2.Exists)
+			f.Data.DataTable.DeleteRow("dtData2")
+		f.Intrinsic.Control.Else
+			f.Intrinsic.Control.CallSub(LoadEmpties)
+		f.Intrinsic.Control.EndIf
+		
+		'Merge in the final results to dtData
+		f.Data.DataTable.Merge("dtData","dtData2",False,2)
+		
+		f.Data.DataTable.AddDisplayPartColumn("dtData2",v.Enum.LongPartType!Part,"Part","Display_Part","Display_Rev")
+	f.Intrinsic.Control.Catch
+		F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+	f.Intrinsic.Control.Finally
+		f.Intrinsic.UI.CloseWaitDialog()
+	f.Intrinsic.Control.EndTry
+Program.Sub.LoadOrders.End
+
+Program.Sub.BuildDictionaries.Start
+	v.Local.bExists.Declare
+	'Fill in Cust Name, Country Code
+	f.Data.DataTable.CreateFromSQL("dtCustMstr","con","select customer, ltrim(rtrim(name_customer)) as name_customer, ltrim(rtrim(country)) as Country from v_customer_master",True)
+	f.Data.Dictionary.createfromdatatable("dictCustName","dtCustMstr","Customer","Name_Customer")
+	f.Data.Dictionary.SetDefaultReturn("dictCustName","")
+	f.Data.Dictionary.createfromdatatable("dictCustCntry","dtCustMstr","Customer","country")
+	f.Data.Dictionary.SetDefaultReturn("dictCustCntry","")
+Program.Sub.BuildDictionaries.End
+
+Program.Sub.LoadEmpties.Start
+	v.Local.sSQL.Declare(String,"select * from gcg_6208_bookings WHERE 1=0")
+	f.Data.DataTable.CreateFromSQL("dtData2","con",v.Local.sSQL,True)
+	f.Data.DataTable.AddDisplayPartColumn("dtData2",v.Enum.LongPartType!Part,"Part","Display_Part","Display_Rev")
+	f.Data.DataView.Create("dtData2","dvData2",22)
+	
+	'Format the gridview
+	f.Intrinsic.Control.CallSub("LoadGV","FRM","frmMain","GSGC","GsGCData","DT","dtData2","GV","GVData")
+Program.Sub.LoadEmpties.End
+
+Program.Sub.cmdBrwsDate_Click.Start
+	f.Intrinsic.Control.Try
+		v.Local.sRet.Declare
+		v.Local.sDate.Declare
+		
+		f.Intrinsic.Control.If(v.Screen.frmMain!ddlDateType.Text,=,"Fiscal")
+			gui.frmMain.monthView1.Visible(False)
+			Gui.frmMain.cmdBrwsDate.SvgPicture("icon_browser_color")
+			v.Global.bCmdBrwsCalOpen.Set(False)
+			f.Intrinsic.UI.Browser("Select a calendar period","con","select start_year, period, beg_date, end_date from v_gl_calendar where period <> '13' ORDER BY START_YEAR DESC, PERIOD ASC;","Year*!*Period*!*BeginDate*!*EndDate","50*!*50*!*50*!*50",v.Local.sRet)
+			f.Intrinsic.Control.If(v.Local.sRet,<>,"***CANCEL***")
+				F.Intrinsic.String.Split(V.Local.sRet,"*!*",v.Local.sRet)
+				f.Intrinsic.String.Build("{0} {1}",v.Local.sRet(0),v.Local.sRet(1),v.Local.sDate)
+				gui.frmMain.txtDate.Text(v.Local.sDate)
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.Elseif(v.Screen.frmMain!ddlDateType.Text,=,"Calendar")
+			f.Intrinsic.Control.If(v.Global.bCmdBrwsCalOpen)
+				gui.frmMain.monthView1.Visible(False)
+				Gui.frmMain.cmdBrwsDate.SvgPicture("icon_browser_color")
+				v.Global.bCmdBrwsCalOpen.Set(False)
+			f.Intrinsic.Control.Else
+				gui.frmMain.monthView1.Visible(True)
+				Gui.frmMain.cmdBrwsDate.SvgPicture("icon_delete_plain_color")
+				v.Global.bCmdBrwsCalOpen.Set(True)
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.Else
+			gui.frmMain.monthView1.Visible(False)
+			Gui.frmMain.cmdBrwsDate.SvgPicture("icon_browser_color")
+			v.Global.bCmdBrwsCalOpen.Set(False)
+		f.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.Control.CallSub(ErrorMsg, CurrentSub, v.Ambient.CurrentSubroutine)
+	f.Intrinsic.Control.EndTry
+Program.Sub.cmdBrwsDate_Click.End
+Program.Sub.monthView1_Change.Start
+	'Write the selected value to the screen after parsing
+	v.Local.iYear.Declare
+	v.Local.iMonth.Declare
+	v.Local.sDate.Declare
+	
+	f.Intrinsic.Date.Month(v.Screen.frmMain!monthView1.Value,v.Local.iMonth)
+	f.Intrinsic.Date.year(v.Screen.frmMain!monthView1.Value,v.Local.iYear)
+	f.Intrinsic.String.Build("{0} {1}",v.Local.iYear.String, v.Local.iMonth.String,v.Local.sDate)
+	gui.frmMain.txtDate.Text(v.Local.sDate)
+	'gui.frmMain.monthView1.Visible(False)
+Program.Sub.monthView1_Change.End
+Program.Sub.ddlDateType_Change.Start
+	f.Intrinsic.Control.If(v.Screen.frmMain!ddlDateType.Text,=," ")
+		gui.frmMain.txtDate.Text("")
+	f.Intrinsic.Control.EndIf
+Program.Sub.ddlDateType_Change.End
+
+Program.Sub.ErrorMsg.Start
+v.Local.sError.Declare
+
+'Closes ODBC connection, default to connection : "con"
+f.Intrinsic.Control.If(v.ODBC!con.State, =, 1)
+	f.ODBC.Connection!con.Close
+f.Intrinsic.Control.EndIf
+
+'Generic Error message.
+f.Intrinsic.String.Build("Project GCG_6208_BookingsDashboard.g2u {0}{0}Subroutine: {1}{0}Error: {2} with Description: {3}", v.Ambient.NewLine, v.Args.CurrentSub, v.Ambient.ErrorNumber, v.Ambient.ErrorDescription, v.Local.sError)
+f.Intrinsic.UI.Msgbox(v.Local.sError)
+Program.Sub.ErrorMsg.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$dduncan$}$20210526072101583$}$r0o+00bj735YsiGsQ60YIo/Zb+26OZQGDY7rg0/fjNz2+pBnkVNJvk+tpOKaNwmiIjyzcpKdqo8=
+Program.Sub.Comments.End
